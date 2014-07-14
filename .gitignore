@@ -11,6 +11,9 @@ Icon
 .Spotlight-V100
 .Trashes
 
+# IntelliJ
+.idea
+
 ###Node###
 
 lib-cov
