@@ -298,7 +298,7 @@ var _ = {};
 		var newResult = func.apply(this,arguments);
 		results.push(newResult);
 		memory.push(argKey);
-		
+
 		return newResult;
     }
   };
@@ -350,6 +350,39 @@ var _ = {};
   // of that string. For example, _.sortBy(people, 'name') should sort
   // an array of people by their name.
   _.sortBy = function(collection, iterator) {
+	
+	var localIterator = iterator;
+  	
+  	// redefine the iterator if necesary 
+  	if(typeof iterator === "string"){
+  		localIterator = function(a){
+  			return a[iterator];
+  		}
+  	}
+
+  	// define the comparator
+  	var greaterThanPredicate = function(a,b){
+
+  		return a > b||!a;
+
+  	}
+  	// define helper function for readability
+  	var isGreater = function(a,b){
+  		return greaterThanPredicate(localIterator(a),localIterator(b));
+  	}
+
+
+  	// sort using bubble sort (which is the only one I know)
+  	for(var j = 0; j <collection.length; j++){
+  		for(var i = 0; i < collection.length-1; i++){
+			if(isGreater(collection[i],collection[i+1])){
+				var aux = collection[i];
+				collection[i]=collection[i+1];
+				collection[i+1]=aux;
+			}
+  		}
+  	}
+  	return collection;
   };
 
   // Zip together two or more arrays with elements of the same index
@@ -358,6 +391,20 @@ var _ = {};
   // Example:
   // _.zip(['a','b','c','d'], [1,2,3]) returns [['a',1], ['b',2], ['c',3], ['d',undefined]]
   _.zip = function() {
+  	return _.reduce(arguments,function(zipped,item){
+  		for(var i = 0; i<Math.max(zipped.result.length,item.length);i++){
+  			if(zipped.result[i]==undefined){
+  				zipped.result[i]=[];
+  			}
+  			if(i<item.length){
+  				zipped.result[i][zipped.count]=item[i];
+  			}else{
+  				zipped.result[i][zipped.count]=undefined;
+  			}
+  		}
+  		zipped.count++;
+  		return zipped;
+  	},{result:[],count:0}).result;
   };
 
   // Takes a multidimensional array and converts it to a one-dimensional array.
@@ -365,16 +412,35 @@ var _ = {};
   //
   // Hint: Use Array.isArray to check if something is an array
   _.flatten = function(nestedArray, result) {
+  	var result = result||[];
+  	var walk = function(array){
+  		_.each(array,function(item){
+  			if(Array.isArray(item)){
+				walk(item);	
+  			}else{
+  				result.push(item);
+  			}
+  		})
+  	}
+  	walk(nestedArray);
+  	return result;
   };
 
   // Takes an arbitrary number of arrays and produces an array that contains
   // every item shared between all the passed-in arrays.
   _.intersection = function() {
+  	return _.reduce(arguments,function(prev,next){
+  		return _.filter(prev,function(previtem){return _.contains(next,previtem);});
+  	},arguments[0].slice())
   };
 
   // Take the difference between one array and a number of other arrays.
   // Only the elements present in just the first array will remain.
   _.difference = function(array) {
+  	return _.reduce(Array.prototype.slice.apply(arguments,[1]),function(prev,next){
+  		// remove the prev items that are in the next array.
+  		return _.reject(prev,function(previtem){return _.contains(next,previtem);});
+  	},array.slice());
   };
 
 
@@ -388,6 +454,34 @@ var _ = {};
   //
   // See the Underbar readme for details.
   _.throttle = function(func, wait) {
+  	var blackList = false; // first time it's called we switch this
+  	var pending = false; // second+ time it's called we switch this
+  	var pendingArgs = []; // second+ time it's called we keep (last) arguments
+    var lastRet = undefined;
+  	var removeFromBlackList = function(){
+  		// if there was an executing pending, execute it.
+  		if(pending){
+  			pending=false;
+  			return callAndBlacklist(pendingArgs);
+  		}else{
+  			blackList=false;
+  		}
+  	};
+  	var callAndBlacklist = function(args){
+		blackList=true;
+		lastRet = func.apply(this,Array.prototype.slice.apply(args,[0]))
+		_.delay(removeFromBlackList,wait);
+		return lastRet;
+  	}
+  	return function(){
+  		if(!blackList){
+  			return callAndBlacklist(arguments);
+  		}else{
+  			pending=true;
+  			pendingArgs = arguments;
+        return lastRet;
+  		}
+  	}
   };
 
 }).call(this);
