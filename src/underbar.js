@@ -196,7 +196,7 @@ var _ = {};
   // provided, provide a default one
   _.some = function(collection, iterator) {
     return !_.every(collection,function(item){
-      return iterator?!iterator(item):item
+      return iterator?!iterator(item):item;
     });
   };
 
