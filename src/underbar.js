@@ -282,18 +282,24 @@ var _ = {};
   // already computed the result for the given argument and return that value
   // instead if possible.
   _.memoize = function(func) {
-    var usedArguments = [];
+    var memory = [];
     var results = [];
     return function(){
-      var args = Array.prototype.slice.call(arguments);
-      var index = _.indexOf(usedArguments,args.join(","));
-      if(index>=0){
-        return results[index];
-      }
-      var newResult = func.apply(this,arguments);
-      results.push(newResult);
-      usedArguments.push(args.join(","));
-      return newResult;
+    	// we turn arguments to string for easy retrieval
+		var argKey = Array.prototype.join.apply(arguments,[","]);
+
+		// check if we remember that argument combination
+		var index = _.indexOf(memory,argKey);
+		if(index>=0){
+			// if so, return cached response
+			return results[index];
+		}
+		// else, run the function and store results
+		var newResult = func.apply(this,arguments);
+		results.push(newResult);
+		memory.push(argKey);
+		
+		return newResult;
     }
   };
 
